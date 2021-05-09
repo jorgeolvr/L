@@ -3,12 +3,13 @@ import java.util.List;
 
 public class SymbolTable {
 
-  // Creates a HashMap with a String and TokenEnum
+  // Creates a List of Symbols
   static List<Symbol> symbolTable = new ArrayList<Symbol>();
 
   /**
-   * Constructor responsible to initialize the SymbolTable with the lexemes and
-   * tokens
+   * Constructor responsible to initialize the SymbolTable with the lexemes,
+   * tokens and kinds
+   * 
    */
   SymbolTable() {
     symbolTable.add(new Symbol("final", TokenEnum.FINAL));
@@ -53,6 +54,9 @@ public class SymbolTable {
   /**
    * Insert a new symbol with lexeme and token in the SymbolTable
    * 
+   * @param lexeme the lexeme of a Symbol
+   * @param token  the token of a Symbol
+   * 
    */
   public void insertSymbolTable(String lexeme, TokenEnum token) {
     symbolTable.add(new Symbol(lexeme, token));
@@ -60,6 +64,10 @@ public class SymbolTable {
 
   /**
    * Insert a new symbol with lexeme, token and kind in the SymbolTable
+   *
+   * @param lexeme the lexeme of a Symbol
+   * @param token  the token of a Symbol
+   * @param kind   the kind of a Symbol
    * 
    */
   public void insertSymbolTable(String lexeme, TokenEnum token, KindEnum kind) {
@@ -68,6 +76,10 @@ public class SymbolTable {
 
   /**
    * Insert a new symbol with lexeme, token and type in the SymbolTable
+   *
+   * @param lexeme the lexeme of a Symbol
+   * @param token  the token of a Symbol
+   * @param type   the type of a Symbol
    * 
    */
   public void insertSymbolTable(String lexeme, TokenEnum token, TypeEnum type) {
@@ -75,11 +87,14 @@ public class SymbolTable {
   }
 
   /**
-   * Search and returns true if the lexeme exists in the SymbolTable
+   * Searches and returns true if the lexeme exists in the SymbolTable
+   * 
+   * @param lexeme the lexeme of a Symbol
+   * @return boolean
    * 
    */
-  public Boolean searchInSymbolTable(String lexeme) {
-    Boolean result = false;
+  public boolean searchInSymbolTable(String lexeme) {
+    boolean result = false;
 
     for (Symbol symbol : symbolTable) {
       if (symbol.getLexeme().equals(lexeme)) {
@@ -91,7 +106,9 @@ public class SymbolTable {
   }
 
   /**
-   * @return the token of the current lexeme
+   * Method responsible to get the token of a Symbol
+   * 
+   * @return TokenEnum
    * 
    */
   public static TokenEnum getToken(String lexeme) {
@@ -107,7 +124,9 @@ public class SymbolTable {
   }
 
   /**
-   * @return the kind of the current lexeme
+   * Method responsible to get the type of a Symbol
+   * 
+   * @return TypeEnum
    * 
    */
   public static TypeEnum getType(String lexeme) {
@@ -123,7 +142,9 @@ public class SymbolTable {
   }
 
   /**
-   * @return the kind of the current lexeme
+   * Method responsible to get the kind of a Symbol
+   * 
+   * @return KindEnum
    * 
    */
   public static KindEnum getKind(String lexeme) {
@@ -139,7 +160,9 @@ public class SymbolTable {
   }
 
   /**
-   * @return the kind of the current lexeme
+   * Method responsible to get the size of a Symbol
+   * 
+   * @return size
    * 
    */
   public static int getSize(String lexeme) {
@@ -155,7 +178,10 @@ public class SymbolTable {
   }
 
   /**
-   * Set the kind of the current lexeme
+   * Method responsible to set the kind of a Symbol
+   * 
+   * @param lexeme the lexeme of a Symbol
+   * @param kind   the kind of a Symbol
    * 
    */
   public static void setKind(String lexeme, KindEnum kind) {
@@ -167,7 +193,11 @@ public class SymbolTable {
   }
 
   /**
-   * Set the type of the current lexeme
+   * Method responsible to set the type of a Symbol
+   * 
+   * 
+   * @param lexeme the lexeme of a Symbol
+   * @param type   the type of a Symbol
    * 
    */
   public static void setType(String lexeme, TypeEnum type) {
@@ -179,7 +209,10 @@ public class SymbolTable {
   }
 
   /**
-   * Set the type of the current lexeme
+   * Method responsible to set the size of a Symbol
+   * 
+   * @param lexeme the lexeme of a Symbol
+   * @param size   the size of a Symbol
    * 
    */
   public static void setSize(String lexeme, int size) {

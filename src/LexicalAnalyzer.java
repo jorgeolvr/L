@@ -8,16 +8,15 @@ import java.awt.event.KeyEvent;
 
 public class LexicalAnalyzer {
   BufferedReader reader;
-  int currentLine;
-  int nextState;
-  int finalState;
+  int currentLine; // Number of the current line in the program
+  int nextState; // Number of current state
+  int finalState; // Number of the final state of the automatons
 
-  SymbolTable symbolTable;
-  String lexeme;
-  String lastLexeme;
-  char character;
-  Boolean returnCharacter;
-  Boolean EOF;
+  SymbolTable symbolTable; // Instance of the SymbolTable
+  String lexeme; // Responsible to make the lexeme from the character read
+  char character; // Stores the character read in the program
+  Boolean returnCharacter; // Indicates if a character was returned
+  Boolean EOF; // Indicates if is end of the program
 
   // List of allowed symbols in the language
   List<Character> symbol = new ArrayList<Character>(Arrays.asList('<', '>', '=', '!', '+', '-', '/', '*', '(', ')', '[',
@@ -50,7 +49,7 @@ public class LexicalAnalyzer {
   /**
    * Method responsible to get the instance of the class Symboltable
    * 
-   * @return instance of Symboltable
+   * @return instance of SymbolTable
    * 
    */
   public SymbolTable getSymbolTable() {
@@ -153,17 +152,15 @@ public class LexicalAnalyzer {
   }
 
   /**
-   * Carry out the steps of the auotomaton from initial state to final state
+   * Carry out the steps of the automaton from initial state to final state
    * 
    */
   public void automaton() throws IOException {
-    // Clear the lexeme every time the automaton is called
-    lexeme = "";
+    lexeme = ""; // Clear the lexeme every time the automaton is called
 
     // Passes through the states until reaches the final state
     while (nextState != finalState) {
-      // Read a new character from the file
-      readNextCharacter();
+      readNextCharacter(); // Read a new character from the file
 
       switch (nextState) {
         case 0:
@@ -228,8 +225,7 @@ public class LexicalAnalyzer {
       }
     }
 
-    // Reset the state to the inicial state
-    nextState = 0;
+    nextState = 0; // Reset the state to the inicial state
   }
 
   public void state0() throws IOException {
@@ -277,6 +273,8 @@ public class LexicalAnalyzer {
       searchLexeme(lexeme);
     } else {
       lexeme += character;
+
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "lexema nao identificado" + " [" + lexeme + "]" + ".");
       System.exit(1);
     }
@@ -287,6 +285,7 @@ public class LexicalAnalyzer {
       lexeme += character;
       nextState = 1;
     } else if ((int) character == 65535) {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "fim de arquivo nao esperado.");
       System.exit(1);
     } else {
@@ -301,12 +300,14 @@ public class LexicalAnalyzer {
       lexeme += character;
       nextState = 3;
     } else if ((int) character == 65535) {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "fim de arquivo nao esperado.");
       System.exit(1);
     } else if (Character.isDigit(character) || Character.isLetter(character)) {
       lexeme += character;
       nextState = 1;
     } else {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "lexema nao identificado" + " [" + lexeme + "]" + ".");
       System.exit(1);
     }
@@ -318,12 +319,14 @@ public class LexicalAnalyzer {
       nextState = finalState;
       searchLexeme(lexeme);
     } else if ((int) character == 65535) {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "fim de arquivo nao esperado.");
       System.exit(1);
     } else if (character != '\n' && character != '$' && character != '\r' && character != '\t') {
       lexeme += character;
       nextState = 4;
     } else {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "lexema nao identificado" + " [" + lexeme + "]" + ".");
       System.exit(1);
     }
@@ -334,6 +337,7 @@ public class LexicalAnalyzer {
       lexeme += character;
       nextState = 5;
     } else if ((int) character == 65535) {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "fim de arquivo nao esperado.");
       System.exit(1);
     } else {
@@ -351,6 +355,7 @@ public class LexicalAnalyzer {
       lexeme += character;
       nextState = 7;
     } else if ((int) character == 65535) {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "fim de arquivo nao esperado.");
       System.exit(1);
     } else {
@@ -366,9 +371,11 @@ public class LexicalAnalyzer {
       lexeme += character;
       nextState = 8;
     } else if ((int) character == 65535) {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "fim de arquivo nao esperado.");
       System.exit(1);
     } else {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "lexema nao identificado" + " [" + lexeme + "]" + ".");
       System.exit(1);
     }
@@ -380,9 +387,11 @@ public class LexicalAnalyzer {
       nextState = finalState;
       searchLexeme(lexeme);
     } else if ((int) character == 65535) {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "fim de arquivo nao esperado.");
       System.exit(1);
     } else {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "lexema nao identificado" + " [" + lexeme + "]" + ".");
       System.exit(1);
     }
@@ -393,9 +402,11 @@ public class LexicalAnalyzer {
       lexeme += character;
       nextState = 10;
     } else if ((int) character == 65535) {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "fim de arquivo nao esperado.");
       System.exit(1);
     } else {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "lexema nao identificado" + " [" + lexeme + "]" + ".");
       System.exit(1);
     }
@@ -407,6 +418,7 @@ public class LexicalAnalyzer {
       nextState = finalState;
       searchLexeme(lexeme);
     } else if ((int) character == 65535) {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "fim de arquivo nao esperado.");
       System.exit(1);
     } else {
@@ -421,9 +433,11 @@ public class LexicalAnalyzer {
       nextState = finalState;
       searchLexeme(lexeme);
     } else if ((int) character == 65535) {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "fim de arquivo nao esperado.");
       System.exit(1);
     } else {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "lexema nao identificado" + " [" + lexeme + "]" + ".");
       System.exit(1);
     }
@@ -435,6 +449,7 @@ public class LexicalAnalyzer {
       nextState = finalState;
       searchLexeme(lexeme);
     } else if ((int) character == 65535) {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "fim de arquivo nao esperado.");
       System.exit(1);
     } else {
@@ -450,6 +465,7 @@ public class LexicalAnalyzer {
       nextState = finalState;
       searchLexeme(lexeme);
     } else if ((int) character == 65535) {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "fim de arquivo nao esperado.");
       System.exit(1);
     } else {
@@ -467,6 +483,7 @@ public class LexicalAnalyzer {
       lexeme += character;
       nextState = 19;
     } else if ((int) character == 65535) {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "fim de arquivo nao esperado.");
       System.exit(1);
     } else {
@@ -485,6 +502,7 @@ public class LexicalAnalyzer {
       nextState = finalState;
       searchLexeme(lexeme);
     } else if ((int) character == 65535) {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "fim de arquivo nao esperado.");
       System.exit(1);
     } else {
@@ -499,6 +517,7 @@ public class LexicalAnalyzer {
       lexeme += character;
       nextState = 17;
     } else if ((int) character == 65535) {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "fim de arquivo nao esperado.");
       System.exit(1);
     } else {
@@ -513,6 +532,7 @@ public class LexicalAnalyzer {
       lexeme += character;
       nextState = 17;
     } else if ((int) character == 65535) {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "fim de arquivo nao esperado.");
       System.exit(1);
     } else {
@@ -543,9 +563,11 @@ public class LexicalAnalyzer {
       nextState = finalState;
       searchLexeme(lexeme);
     } else if ((int) character == 65535) {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "fim de arquivo nao esperado.");
       System.exit(1);
     } else {
+      // Throws an error and exit the program
       System.out.println(currentLine + "\n" + "lexema nao identificado" + " [" + lexeme + "]" + ".");
       System.exit(1);
     }

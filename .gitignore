@@ -2,3 +2,4 @@
 .vscode
 .classpath
 tests
+program.asm

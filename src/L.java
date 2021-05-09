@@ -23,18 +23,13 @@ public class L {
             // Instance of the lexical analyzer
             LexicalAnalyzer lAnalyzer = new LexicalAnalyzer(new BufferedReader(new FileReader(file)));
 
-            // for (int i = 0; i < 25; i++) {
-            // lAnalyzer.automaton();
-            // }
-
-            // lAnalyzer.getSymbolTable().printSymbolTable();
-
             // Instance of the syntax analyzer
             Parser sAnalyzer = new Parser(lAnalyzer);
 
             // Calls the method responsible to realize the syntax analysis
             sAnalyzer.parse();
         } catch (Exception ex) {
+            // Throws an error and exit the program
             System.err.println("ERRO:" + ex + " Não foi possível ler o arquivo.");
         }
     }
