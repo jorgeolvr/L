@@ -188,7 +188,7 @@ public class Parser {
     buffer.add("mov ah, 4Ch");
     buffer.add("int 21h");
     buffer.add("cseg ENDS ;fim seg. código");
-    buffer.add("ENDstrt; fim programa");
+    buffer.add("END strt; fim programa");
 
     createAssembly(); // Creates the program in assembly machine language
 
