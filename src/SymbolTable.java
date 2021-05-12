@@ -178,6 +178,24 @@ public class SymbolTable {
   }
 
   /**
+   * Method responsible to get the address of a Symbol
+   * 
+   * @return address
+   * 
+   */
+  public static int getAddress(String lexeme) {
+    int address = 0;
+
+    for (Symbol symbol : symbolTable) {
+      if (symbol.getLexeme().equals(lexeme)) {
+        address = symbol.getAddress();
+      }
+    }
+
+    return address;
+  }
+
+  /**
    * Method responsible to set the kind of a Symbol
    * 
    * @param lexeme the lexeme of a Symbol
@@ -219,6 +237,21 @@ public class SymbolTable {
     for (Symbol symbol : symbolTable) {
       if (symbol.getLexeme().equals(lexeme)) {
         symbol.setSize(size);
+      }
+    }
+  }
+
+  /**
+   * Method responsible to set the address of a Symbol
+   * 
+   * @param lexeme  the lexeme of a Symbol
+   * @param address the adress of a Symbol
+   * 
+   */
+  public static void setAddress(String lexeme, int address) {
+    for (Symbol symbol : symbolTable) {
+      if (symbol.getLexeme().equals(lexeme)) {
+        symbol.setAddress(address);
       }
     }
   }

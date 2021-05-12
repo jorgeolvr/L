@@ -23,7 +23,7 @@ public class Parser {
      * The path of the assembly program
      * 
      */
-    assemblyFile = new BufferedWriter(new FileWriter("/Users/jorgeoliveira/Documents/L/program.asm"));
+    assemblyFile = new BufferedWriter(new FileWriter("/Users/jorgeoliveira/Developer/L/program.asm"));
     buffer = new ArrayList<>();
 
     this.lAnalyzer = analyzer;
@@ -238,7 +238,7 @@ public class Parser {
         valueType = v(); // Catches the type of the value that will be attribuited to the identifier
 
         // The type must be integer if have plus or minus signal
-        if (signal = true && valueType != TypeEnum.INTEGER) {
+        if (signal == true && valueType != TypeEnum.INTEGER) {
           // Throws an error and exit the program
           System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
           System.exit(1);

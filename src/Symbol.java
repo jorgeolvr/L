@@ -4,6 +4,7 @@ public class Symbol {
   public TypeEnum type; // The type of the Symbol
   public KindEnum kind; // The kind of the Symbol
   public int size; // The size of the Symbol
+  public int address;
 
   /**
    * Constructor responsible initialize the lexeme and token of a Symbol
@@ -136,6 +137,16 @@ public class Symbol {
   }
 
   /**
+   * Method responsible to get the address of a Symbol
+   * 
+   * @return address
+   * 
+   */
+  public int getAddress() {
+    return address;
+  }
+
+  /**
    * Method responsible to set the type of a Symbol
    * 
    * @param type the type of a Symbol
@@ -163,5 +174,15 @@ public class Symbol {
    */
   public void setSize(int size) {
     this.size = size;
+  }
+
+  /**
+   * Method responsible to set the address of a Symbol
+   * 
+   * @param size the address of a Symbol
+   * 
+   */
+  public void setAddress(int address) {
+    this.address = address;
   }
 }
