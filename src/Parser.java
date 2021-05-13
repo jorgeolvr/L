@@ -5,8 +5,9 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 
 public class Parser {
-  Integer valueInt = null; // Responsible to store the value of type integer
-  String valueChar = null; // Responsible to store the value of type character
+  int nextTemp = 0;
+  int nextVar = 0x4000;
+  int nextLabel = 0;
   LexicalAnalyzer lAnalyzer; // Instance of the lexical analyzer
   BufferedWriter assemblyFile; // Instance of the assembly program file
   public List<String> buffer; // Buffer responsible store the assembly instructions
@@ -28,6 +29,20 @@ public class Parser {
 
     this.lAnalyzer = analyzer;
     lAnalyzer.automaton(); // Realizes the first call of the automaton
+  }
+
+  public int temporary(int numByte) {
+    nextTemp += numByte;
+    return nextTemp - numByte;
+  }
+
+  public int memory(int numByte) {
+    nextVar += numByte;
+    return nextVar - numByte;
+  }
+
+  public String label() {
+    return "R" + nextLabel++;
   }
 
   /**
@@ -149,10 +164,10 @@ public class Parser {
 
     // Beginning of the assembly code
     buffer.add("sseg SEGMENT STACK ;início seg. pilha");
-    buffer.add("byte 4000h DUP(?) ;dimensiona pilha");
+    buffer.add("  byte 4000h DUP(?) ;dimensiona pilha");
     buffer.add("sseg ENDS ;fim seg. pilha");
     buffer.add("dseg SEGMENT PUBLIC ;início seg. dados");
-    buffer.add("byte 4000h DUP(?) ;temporários");
+    buffer.add("  byte 4000h DUP(?) ;temporários");
 
     while (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ID
         || SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.FINAL
@@ -167,10 +182,10 @@ public class Parser {
 
     buffer.add("dseg ENDS ;fim seg. dados");
     buffer.add("cseg SEGMENT PUBLIC ;início seg. código");
-    buffer.add("ASSUMECS:cseg, DS:dseg");
+    buffer.add("  ASSUME CS:cseg, DS:dseg");
     buffer.add("strt: ;início do programa");
-    buffer.add("mov ax, dseg");
-    buffer.add("mov ds, ax");
+    buffer.add("  mov ax, dseg");
+    buffer.add("  mov ds, ax");
 
     while (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ID
         || SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.FOR
@@ -185,8 +200,8 @@ public class Parser {
     matchToken(TokenEnum.CLOSE_BRACES);
 
     // End of the assembly code
-    buffer.add("mov ah, 4Ch");
-    buffer.add("int 21h");
+    buffer.add("  mov ah, 4Ch");
+    buffer.add("  int 21h");
     buffer.add("cseg ENDS ;fim seg. código");
     buffer.add("END strt; fim programa");
 
@@ -204,7 +219,7 @@ public class Parser {
   }
 
   /**
-   * D -> final id [ = [ ( - ) ] V ] {, id [ = [ ( - ) ] V ]}; | T
+   * D -> final id [ = [ ( - ) ] V ]; | T
    * 
    * @throws IOException
    * 
@@ -213,6 +228,7 @@ public class Parser {
     String idLexeme = null; // Lexeme of the id
     TypeEnum valueType = null; // Type of the value in the attribution
     boolean signal = false; // True if have plus or minus signal
+    String line = null;
 
     if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.FINAL) {
       matchToken(TokenEnum.FINAL);
@@ -235,52 +251,34 @@ public class Parser {
           matchToken(TokenEnum.MINUS);
         }
 
+        String lexemeValue = lAnalyzer.lexeme;
         valueType = v(); // Catches the type of the value that will be attribuited to the identifier
+
+        if (valueType == TypeEnum.CHARACTER) {
+          line = "  byte ";
+        } else {
+          line = "  sword ";
+        }
 
         // The type must be integer if have plus or minus signal
         if (signal == true && valueType != TypeEnum.INTEGER) {
           // Throws an error and exit the program
           System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
           System.exit(1);
-        } else {
-          signal = false;
-          setConstKind(idLexeme, valueType); // Method that sets the kind of the id as const
-        }
-      }
-
-      while (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.COMMA) {
-        matchToken(TokenEnum.COMMA);
-
-        if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ID) {
-          verifyIdentifier(lAnalyzer.lexeme); // Method that verifies if the id is already declared
-          idLexeme = lAnalyzer.lexeme;
-          matchToken(TokenEnum.ID);
-        } else {
-          // Throws an error and exit the program
-          System.out.println(lAnalyzer.currentLine + "\n" + "token nao esperado" + " [" + lAnalyzer.lexeme + "]" + ".");
-          System.exit(1);
         }
 
-        if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.EQUAL) {
-          matchToken(TokenEnum.EQUAL);
-
-          if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.MINUS) {
-            signal = true;
-            matchToken(TokenEnum.MINUS);
-          }
-
-          valueType = v(); // Catches the type of the value that will be attribuited to the identifier
-
-          // The type must be integer if have plus or minus signal
-          if (signal != false && valueType != TypeEnum.INTEGER) {
-            // Throws an error and exit the program
-            System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
-            System.exit(1);
-          } else {
-            signal = false;
-            setConstKind(idLexeme, valueType); // Method that sets the kind of the id as const
-          }
+        if (signal == true) {
+          line += "-";
         }
+
+        signal = false;
+        setConstKind(idLexeme, valueType); // Method that sets the kind of the id as const
+
+        if (valueType == TypeEnum.LOGIC) {
+          lexemeValue = lexemeValue.equals("TRUE") ? "1" : "0";
+        }
+
+        buffer.add(line + lexemeValue + " ; " + idLexeme);
       }
 
       matchToken(TokenEnum.SEMICOLON);
@@ -302,6 +300,7 @@ public class Parser {
     TypeEnum valueType = null; // Type of the value in the attribution
     boolean signal = false; // True if have plus or minus signal
     int size = 0; // Size of the vector
+    String line = null;
 
     if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.CHAR) {
       type = TypeEnum.CHARACTER;
@@ -316,6 +315,12 @@ public class Parser {
       // Throws an error and exit the program
       System.out.println(lAnalyzer.currentLine + "\n" + "token nao esperado" + " [" + lAnalyzer.lexeme + "]" + ".");
       System.exit(1);
+    }
+
+    if (type == TypeEnum.CHARACTER) {
+      line = "  byte ";
+    } else {
+      line = "  sword ";
     }
 
     if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ID) {
@@ -339,7 +344,7 @@ public class Parser {
         /**
          * Impossible to create a vector if the size is zero or greater than 8kb
          */
-        if (size > 0 && size <= 8192) {
+        if (size > 0 && size * (type == TypeEnum.CHARACTER ? 1 : 2) <= 8192) {
           SymbolTable.setSize(idLexeme, size);
           matchToken(TokenEnum.VALUE);
         } else {
@@ -353,33 +358,58 @@ public class Parser {
         System.exit(1);
       }
 
+      line += size + " DUP(?)";
+
       matchToken(TokenEnum.CLOSE_BRACKETS);
     } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ATTRIBUTION) {
       matchToken(TokenEnum.ATTRIBUTION);
 
       if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.PLUS) {
-        signal = true;
         matchToken(TokenEnum.PLUS);
       } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.MINUS) {
         signal = true;
         matchToken(TokenEnum.MINUS);
       }
 
+      String lexemeValue = lAnalyzer.lexeme;
       valueType = v(); // Catches the type of the value that will be attribuited in the identifier
 
       // The type must be integer if have plus or minus signal
-      if (signal != false && valueType != TypeEnum.INTEGER) {
+      if (signal == true && valueType != TypeEnum.INTEGER) {
         // Throws an error and exit the program
         System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
         System.exit(1);
       } else {
-        signal = false;
         verifyAttributionCompatibility(idLexeme, valueType);
       }
+
+      if (signal == true) {
+        line += "-";
+      }
+
+      signal = false;
+      if (valueType == TypeEnum.LOGIC) {
+        lexemeValue = lexemeValue.equals("TRUE") ? "1" : "0";
+      }
+
+      line += lexemeValue;
+
+    } else {
+      line += "?";
     }
+
+    buffer.add(line + " ;" + idLexeme);
 
     while (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.COMMA) {
       matchToken(TokenEnum.COMMA);
+
+      line = "";
+
+      if (type == TypeEnum.CHARACTER) {
+        line = "  byte ";
+      } else {
+        line = "  sword ";
+      }
 
       if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ID) {
         verifyIdentifier(lAnalyzer.lexeme);
@@ -401,7 +431,7 @@ public class Parser {
           /**
            * Impossible to create a vector if the size is zero or greater than 8kb
            */
-          if (size > 0 && size <= 8192) {
+          if (size > 0 && size * (type == TypeEnum.CHARACTER ? 1 : 2) <= 8192) {
             SymbolTable.setSize(idLexeme, size);
             matchToken(TokenEnum.VALUE);
           } else {
@@ -415,32 +445,122 @@ public class Parser {
           System.exit(1);
         }
 
+        line += size + " DUP(?)";
+
         matchToken(TokenEnum.CLOSE_BRACKETS);
       } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ATTRIBUTION) {
         matchToken(TokenEnum.ATTRIBUTION);
 
         if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.PLUS) {
-          signal = true;
           matchToken(TokenEnum.PLUS);
         } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.MINUS) {
           signal = true;
           matchToken(TokenEnum.MINUS);
         }
 
+        String lexemeValue = lAnalyzer.lexeme;
         valueType = v(); // Catches the type of the value that will be attribuited in the identifier
 
-        if (signal != false && valueType != TypeEnum.INTEGER) {
+        if (signal == true && valueType != TypeEnum.INTEGER) {
           // Throws an error and exit the program
           System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
           System.exit(1);
         } else {
-          signal = false;
           verifyAttributionCompatibility(idLexeme, valueType);
         }
+
+        if (signal == true) {
+          line += "-";
+        }
+
+        signal = false;
+        if (valueType == TypeEnum.LOGIC) {
+          lexemeValue = lexemeValue.equals("TRUE") ? "1" : "0";
+        }
+
+        line += lexemeValue;
+
+      } else {
+        line += "?";
       }
+
+      buffer.add(line + " ;" + idLexeme);
     }
 
     matchToken(TokenEnum.SEMICOLON);
+  }
+
+  /**
+   * ATT -> id [ “[“ EXP “]” ] [:= [ ( + | - ) ] EXP ]
+   * 
+   * @throws IOException
+   * 
+   */
+  public void att() throws IOException {
+    boolean signal = false;
+    Register register = new Register();
+    String idLexeme = null;
+
+    if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ID) {
+      if (SymbolTable.getKind(lAnalyzer.lexeme) == KindEnum.VAR) {
+        idLexeme = lAnalyzer.lexeme;
+        matchToken(TokenEnum.ID);
+      } else if (SymbolTable.getKind(lAnalyzer.lexeme) == KindEnum.CONST) {
+        // Throws an error and exit the program
+        System.out.println(lAnalyzer.currentLine + "\n" + "classe de identificador incompatível" + " ["
+            + lAnalyzer.lexeme + "]" + ".");
+        System.exit(1);
+      } else {
+        // Throws an error and exit the program
+        System.out.println(
+            lAnalyzer.currentLine + "\n" + "identificador nao declarado" + " [" + lAnalyzer.lexeme + "]" + ".");
+        System.exit(1);
+      }
+    } else {
+      // Throws an error and exit the program
+      System.out.println(lAnalyzer.currentLine + "\n" + "token nao esperado" + " [" + lAnalyzer.lexeme + "]" + ".");
+      System.exit(1);
+    }
+
+    // [ “[“ EXP “]” ]
+    if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.OPEN_BRACKETS) {
+      matchToken(TokenEnum.OPEN_BRACKETS);
+
+      register = exp(); // Catches the type of the expression
+
+      if (register.getType() != TypeEnum.INTEGER) {
+        // Throws an error and exit the program
+        System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
+        System.exit(1);
+      }
+
+      matchToken(TokenEnum.CLOSE_BRACKETS);
+    }
+
+    // [:= [ ( + | - ) ] EXP ]
+    if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ATTRIBUTION) {
+      matchToken(TokenEnum.ATTRIBUTION);
+
+      if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.PLUS) {
+        signal = true;
+        matchToken(TokenEnum.PLUS);
+      } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.MINUS) {
+        signal = true;
+        matchToken(TokenEnum.MINUS);
+      }
+
+      register = exp(); // Catches the type of the expression
+
+      if (signal == true && register.getType() != TypeEnum.INTEGER) {
+        // Throws an error and exit the program
+        System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
+        System.exit(1);
+      } else {
+        signal = false;
+        verifyAttributionCompatibility(idLexeme, register.getType());
+
+      }
+    }
   }
 
   /**
@@ -450,6 +570,7 @@ public class Parser {
    * @throws IOException
    * 
    */
+
   public TypeEnum v() throws IOException {
     TypeEnum type = null; // Stores the type
 
@@ -501,7 +622,7 @@ public class Parser {
    * 
    */
   public void r() throws IOException {
-    TypeEnum expType = null;
+    Register register = null;
 
     matchToken(TokenEnum.READLN);
     matchToken(TokenEnum.OPEN_PARENTHESES);
@@ -524,10 +645,10 @@ public class Parser {
     if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.OPEN_BRACKETS) {
       matchToken(TokenEnum.OPEN_BRACKETS);
 
-      expType = exp(); // Catches the type of the expression
+      register = exp(); // Catches the type of the expression
 
       // Type must be integer
-      if (expType != TypeEnum.INTEGER) {
+      if (register.getType() != TypeEnum.INTEGER) {
         // Throws an error and exit the program
         System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
         System.exit(1);
@@ -568,114 +689,13 @@ public class Parser {
   }
 
   /**
-   * ATT -> id [ “[“ EXP “]” ] [:= [ ( + | - ) ] EXP ]
-   * 
-   * @throws IOException
-   * 
-   */
-  public void att() throws IOException {
-    boolean signal = false;
-    TypeEnum expType = null;
-    String idLexeme = null;
-
-    if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ID) {
-      if (SymbolTable.getKind(lAnalyzer.lexeme) == KindEnum.VAR) {
-        idLexeme = lAnalyzer.lexeme;
-        matchToken(TokenEnum.ID);
-      } else if (SymbolTable.getKind(lAnalyzer.lexeme) == KindEnum.CONST) {
-        // Throws an error and exit the program
-        System.out.println(lAnalyzer.currentLine + "\n" + "classe de identificador incompatível" + " ["
-            + lAnalyzer.lexeme + "]" + ".");
-        System.exit(1);
-      } else {
-        // Throws an error and exit the program
-        System.out.println(
-            lAnalyzer.currentLine + "\n" + "identificador nao declarado" + " [" + lAnalyzer.lexeme + "]" + ".");
-        System.exit(1);
-      }
-    } else {
-      // Throws an error and exit the program
-      System.out.println(lAnalyzer.currentLine + "\n" + "token nao esperado" + " [" + lAnalyzer.lexeme + "]" + ".");
-      System.exit(1);
-    }
-
-    // [ “[“ EXP “]” ]
-    if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.OPEN_BRACKETS) {
-      matchToken(TokenEnum.OPEN_BRACKETS);
-
-      expType = exp(); // Catches the type of the expression
-
-      if (expType != TypeEnum.INTEGER) {
-        // Throws an error and exit the program
-        System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
-        System.exit(1);
-      }
-
-      /**
-       * If exp.value <= 0 || exp.value > 8192 || exp.value > idLexeme.size then ERROR
-       *
-       */
-      if (valueInt != null && valueInt <= 0) {
-        // Throws an error and exit the program
-        System.out.println(lAnalyzer.currentLine + "\n" + "tamanho do vetor excede o maximo permitido.");
-        System.exit(1);
-      } else if (valueInt != null && valueInt > 8192) {
-        // Throws an error and exit the program
-        System.out.println(lAnalyzer.currentLine + "\n" + "tamanho do vetor excede o maximo permitido.");
-        System.exit(1);
-      } else if (valueInt != null && valueInt > SymbolTable.getSize(idLexeme)) {
-        // Throws an error and exit the program
-        System.out.println(lAnalyzer.currentLine + "\n" + "tamanho do vetor excede o maximo permitido.");
-        System.exit(1);
-      } else {
-        valueInt = null;
-      }
-
-      matchToken(TokenEnum.CLOSE_BRACKETS);
-    }
-
-    // [:= [ ( + | - ) ] EXP ]
-    if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ATTRIBUTION) {
-      matchToken(TokenEnum.ATTRIBUTION);
-
-      if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.PLUS) {
-        signal = true;
-        matchToken(TokenEnum.PLUS);
-      } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.MINUS) {
-        signal = true;
-        matchToken(TokenEnum.MINUS);
-      }
-
-      expType = exp(); // Catches the type of the expression
-
-      if (signal != false && expType != TypeEnum.INTEGER) {
-        // Throws an error and exit the program
-        System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
-        System.exit(1);
-      } else {
-        signal = false;
-        verifyAttributionCompatibility(idLexeme, expType);
-
-        // If idLexeme.size < exp.value.length then ERROR
-        if (valueChar != null & SymbolTable.getSize(idLexeme) < valueChar.length() - 1
-            && expType == TypeEnum.CHARACTER) {
-          System.out.println(lAnalyzer.currentLine + "\n" + "tamanho do vetor excede o maximo permitido.");
-          System.exit(1);
-        } else {
-          valueChar = "";
-        }
-      }
-    }
-  }
-
-  /**
    * F -> for “(“ [ L ] ; EXP ; [ L ] “)” ( C | “{“ { C ;}+ “}” )
    * 
    * @throws IOException
    * 
    */
   public void f() throws IOException {
-    TypeEnum expType = null;
+    Register register = null;
 
     matchToken(TokenEnum.FOR);
     matchToken(TokenEnum.OPEN_PARENTHESES);
@@ -695,9 +715,9 @@ public class Parser {
       matchToken(TokenEnum.SEMICOLON);
     }
 
-    expType = exp(); // Catches the type of the expression
+    register = exp(); // Catches the type of the expression
 
-    if (expType != TypeEnum.LOGIC) {
+    if (register.getType() != TypeEnum.LOGIC) {
       // Throws an error and exit the program
       System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
       System.exit(1);
@@ -755,15 +775,15 @@ public class Parser {
    * 
    */
   public void i() throws IOException {
-    TypeEnum expType = null;
+    Register register = null;
 
     // if “(“ EXP “)” then
     matchToken(TokenEnum.IF);
     matchToken(TokenEnum.OPEN_PARENTHESES);
 
-    expType = exp(); // Catches the type of the expression
+    register = exp(); // Catches the type of the expression
 
-    if (expType != TypeEnum.LOGIC) {
+    if (register.getType() != TypeEnum.LOGIC) {
       // Throws an error and exit the program
       System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
       System.exit(1);
@@ -846,7 +866,7 @@ public class Parser {
    */
   public void a() throws IOException {
     boolean signal = false;
-    TypeEnum expType = null;
+    Register register;
     String idLexeme = null;
 
     if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ID) {
@@ -874,29 +894,12 @@ public class Parser {
     if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.OPEN_BRACKETS) {
       matchToken(TokenEnum.OPEN_BRACKETS);
 
-      expType = exp(); // Catches the type of the expression
+      register = exp(); // Catches the type of the expression
 
-      if (expType != TypeEnum.INTEGER) {
+      if (register.getType() != TypeEnum.INTEGER) {
         // Throws an error and exit the program
         System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
         System.exit(1);
-      }
-
-      // If exp.value <= 0 || exp.value > 8192 || exp.value > idLexeme.size then ERROR
-      if (valueInt != null && valueInt <= 0) {
-        // Throws an error and exit the program
-        System.out.println(lAnalyzer.currentLine + "\n" + "tamanho do vetor excede o maximo permitido.");
-        System.exit(1);
-      } else if (valueInt != null && valueInt > 8192) {
-        // Throws an error and exit the program
-        System.out.println(lAnalyzer.currentLine + "\n" + "tamanho do vetor excede o maximo permitido.");
-        System.exit(1);
-      } else if (valueInt != null && valueInt > SymbolTable.getSize(idLexeme)) {
-        // Throws an error and exit the program
-        System.out.println(lAnalyzer.currentLine + "\n" + "tamanho do vetor excede o maximo permitido.");
-        System.exit(1);
-      } else {
-        valueInt = null;
       }
 
       matchToken(TokenEnum.CLOSE_BRACKETS);
@@ -914,25 +917,15 @@ public class Parser {
         matchToken(TokenEnum.MINUS);
       }
 
-      expType = exp(); // Catches the type of the expression
+      register = exp(); // Catches the type of the expression
 
-      if (signal != false && expType != TypeEnum.INTEGER) {
+      if (signal == true && register.getType() != TypeEnum.INTEGER) {
         // Throws an error and exit the program
         System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
         System.exit(1);
       } else {
         signal = false;
-        verifyAttributionCompatibility(idLexeme, expType);
-
-        // If idLexeme.size < exp.value.length then ERROR
-        if (valueChar != null && SymbolTable.getSize(idLexeme) < valueChar.length() - 1
-            && expType == TypeEnum.CHARACTER) {
-          // Throws an error and exit the program
-          System.out.println(lAnalyzer.currentLine + "\n" + "tamanho do vetor excede o maximo permitido.");
-          System.exit(1);
-        } else {
-          valueChar = null;
-        }
+        verifyAttributionCompatibility(idLexeme, register.getType());
       }
     }
 
@@ -942,7 +935,7 @@ public class Parser {
 
       if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ID) {
         if (SymbolTable.getKind(lAnalyzer.lexeme) == KindEnum.VAR) {
-          idLexeme = lAnalyzer.lexeme;
+          // idLexeme = lAnalyzer.lexeme;
           matchToken(TokenEnum.ID);
         } else if (SymbolTable.getKind(lAnalyzer.lexeme) == KindEnum.CONST) {
           // Throws an error and exit the program
@@ -965,29 +958,12 @@ public class Parser {
       if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.OPEN_BRACKETS) {
         matchToken(TokenEnum.OPEN_BRACKETS);
 
-        expType = exp(); // Catches the type of the expression
+        register = exp(); // Catches the type of the expression
 
-        if (expType != TypeEnum.INTEGER) {
+        if (register.getType() != TypeEnum.INTEGER) {
           // Throws an error and exit the program
           System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
           System.exit(1);
-        }
-
-        // If exp.value <= 0 || exp.value > 8192 || exp.value > idLexeme.size then ERROR
-        if (valueInt != null && valueInt <= 0) {
-          // Throws an error and exit the program
-          System.out.println(lAnalyzer.currentLine + "\n" + "tamanho do vetor excede o maximo permitido.");
-          System.exit(1);
-        } else if (valueInt != null && valueInt > 8192) {
-          // Throws an error and exit the program
-          System.out.println(lAnalyzer.currentLine + "\n" + "tamanho do vetor excede o maximo permitido.");
-          System.exit(1);
-        } else if (valueInt != null && valueInt > SymbolTable.getSize(idLexeme)) {
-          // Throws an error and exit the program
-          System.out.println(lAnalyzer.currentLine + "\n" + "tamanho do vetor excede o maximo permitido.");
-          System.exit(1);
-        } else {
-          valueInt = null;
         }
 
         matchToken(TokenEnum.CLOSE_BRACKETS);
@@ -1005,25 +981,15 @@ public class Parser {
           matchToken(TokenEnum.MINUS);
         }
 
-        expType = exp(); // Catches the type of the expression
+        register = exp(); // Catches the type of the expression
 
-        if (signal != false && expType != TypeEnum.INTEGER) {
+        if (signal == true && register.getType() != TypeEnum.INTEGER) {
           // Throws an error and exit the program
           System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
           System.exit(1);
         } else {
           signal = false;
-          verifyAttributionCompatibility(idLexeme, expType);
-
-          // se idLexeme.size < exp.value.length (atribuição de char no vetor) então ERRO
-          if (valueChar != null && SymbolTable.getSize(idLexeme) < valueChar.length() - 1
-              && expType == TypeEnum.CHARACTER) {
-            // Throws an error and exit the program
-            System.out.println(lAnalyzer.currentLine + "\n" + "tamanho do vetor excede o maximo permitido.");
-            System.exit(1);
-          } else {
-            valueChar = null;
-          }
+          verifyAttributionCompatibility(idLexeme, register.getType());
         }
       }
     }
@@ -1036,7 +1002,7 @@ public class Parser {
    * 
    */
   public void w() throws IOException {
-    TypeEnum expType = null;
+    Register register;
 
     if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.WRITE) {
       matchToken(TokenEnum.WRITE);
@@ -1045,9 +1011,9 @@ public class Parser {
     }
 
     matchToken(TokenEnum.OPEN_PARENTHESES);
-    expType = exp(); // Catches the type of the expression
+    register = exp(); // Catches the type of the expression
 
-    if (expType == TypeEnum.LOGIC) {
+    if (register.getType() == TypeEnum.LOGIC) {
       // Throws an error and exit the program
       System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
       System.exit(1);
@@ -1055,9 +1021,9 @@ public class Parser {
 
     while (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.COMMA) {
       matchToken(TokenEnum.COMMA);
-      expType = exp(); // Catches the type of the expression
+      register = exp(); // Catches the type of the expression
 
-      if (expType == TypeEnum.LOGIC) {
+      if (register.getType() == TypeEnum.LOGIC) {
         // Throws an error and exit the program
         System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
         System.exit(1);
@@ -1070,23 +1036,29 @@ public class Parser {
   /**
    * EXP -> EXPS [ ( = | <> | < | > | <= | >=) EXPS ]
    * 
-   * @throws IOException
+   * @throws IOException Fazer os ifs de comparação para essa regra
    * 
    */
-  public TypeEnum exp() throws IOException {
-    TypeEnum finalType = null;
-    TypeEnum type1 = null;
-    TypeEnum type2 = null;
+  public Register exp() throws IOException {
+    Register firstRegister;
+    Register secondRegister;
+    Register finalRegister = new Register();
 
-    type1 = exps(); // Catches the type of the expression
+    firstRegister = exps();
+
+    finalRegister.setAddress(firstRegister.getAddress());
+    finalRegister.setSize(firstRegister.getSize());
+    finalRegister.setType(firstRegister.getType());
 
     // [ ( = | <> | < | > | <= | >=) EXPS ]
     if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.EQUAL) {
       matchToken(TokenEnum.EQUAL);
-      type2 = exps(); // Catches the type of the expression
+      secondRegister = exps(); // Catches the type of the expression
 
-      if (type1 == type2) {
-        finalType = TypeEnum.LOGIC;
+      if (firstRegister.getType() == secondRegister.getType()) {
+
+        // if(expData1.size > 0)
+
       } else {
         // Throws an error and exit the program
         System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
@@ -1094,10 +1066,10 @@ public class Parser {
       }
     } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.NOT_EQUAL) {
       matchToken(TokenEnum.NOT_EQUAL);
-      type2 = exps(); // Catches the type of the expression
+      secondRegister = exps(); // Catches the type of the expression
 
-      if (type1 == type2) {
-        finalType = TypeEnum.LOGIC;
+      if (firstRegister == secondRegister) {
+        // returnData = TypeEnum.LOGIC;
       } else {
         // Throws an error and exit the program
         System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
@@ -1105,10 +1077,10 @@ public class Parser {
       }
     } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.LESS_THAN) {
       matchToken(TokenEnum.LESS_THAN);
-      type2 = exps(); // Catches the type of the expression
+      secondRegister = exps(); // Catches the type of the expression
 
-      if (type1 == type2) {
-        finalType = TypeEnum.LOGIC;
+      if (firstRegister == secondRegister) {
+        // returnData = TypeEnum.LOGIC;
       } else {
         // Throws an error and exit the program
         System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
@@ -1116,10 +1088,10 @@ public class Parser {
       }
     } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.GREATER_THAN) {
       matchToken(TokenEnum.GREATER_THAN);
-      type2 = exps(); // Catches the type of the expression
+      secondRegister = exps(); // Catches the type of the expression
 
-      if (type1 == type2) {
-        finalType = TypeEnum.LOGIC;
+      if (firstRegister == secondRegister) {
+        // returnData = TypeEnum.LOGIC;
       } else {
         // Throws an error and exit the program
         System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
@@ -1127,10 +1099,10 @@ public class Parser {
       }
     } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.LESS_OR_EQUAL) {
       matchToken(TokenEnum.LESS_OR_EQUAL);
-      type2 = exps(); // Catches the type of the expression
+      secondRegister = exps(); // Catches the type of the expression
 
-      if (type1 == type2) {
-        finalType = TypeEnum.LOGIC;
+      if (firstRegister == secondRegister) {
+        // returnData = TypeEnum.LOGIC;
       } else {
         // Throws an error and exit the program
         System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
@@ -1138,47 +1110,47 @@ public class Parser {
       }
     } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.GREATER_OR_EQUAL) {
       matchToken(TokenEnum.GREATER_OR_EQUAL);
-      type2 = exps(); // Catches the type of the expression
+      secondRegister = exps(); // Catches the type of the expression
 
-      if (type1 == type2) {
-        finalType = TypeEnum.LOGIC;
+      if (firstRegister == secondRegister) {
+        // returnData = TypeEnum.LOGIC;
       } else {
         // Throws an error and exit the program
         System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
         System.exit(1);
       }
-    } else {
-      finalType = type1;
     }
 
-    return finalType;
+    return finalRegister;
   }
 
   /**
    * EXPS -> [ (+ | -) ] TERM { ( + | - | or) TERM }
    * 
    * @throws IOException
-   * @return TypeEnum of EXPS
+   * @return finalRegister Register
    * 
    */
-  public TypeEnum exps() throws IOException {
+  public Register exps() throws IOException {
     boolean signal = false;
-    TypeEnum finalType = null;
-    TypeEnum type1 = null;
-    TypeEnum type2 = null;
-    Integer valueAux = null;
+    Register firstRegister;
+    Register secondRegister;
+    Register finalRegister = new Register();
 
     if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.PLUS) {
-      signal = true;
       matchToken(TokenEnum.PLUS);
     } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.MINUS) {
       signal = true;
       matchToken(TokenEnum.MINUS);
     }
 
-    type1 = term(); // Catches the type of the first term
+    firstRegister = term(); // Catches the type of the first term
 
-    if (signal != false && type1 != TypeEnum.INTEGER) {
+    finalRegister.setAddress(firstRegister.getAddress());
+    finalRegister.setSize(firstRegister.getSize());
+    finalRegister.setType(firstRegister.getType());
+
+    if (signal == true && firstRegister.getType() != TypeEnum.INTEGER) {
       // Throws an error and exit the program
       System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
       System.exit(1);
@@ -1191,207 +1163,111 @@ public class Parser {
         || SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.MINUS
         || SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.OR) {
       if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.PLUS) {
-        signal = true;
 
         matchToken(TokenEnum.PLUS);
-        valueAux = valueInt; // Temporary vartiable to store the first value
-        type2 = term(); // Catches the type of the second term
 
-        // The final value will be the sum of the temporary with the second value
-        if (valueAux != null && valueInt != null) {
-          valueInt = valueAux + valueInt;
-        }
+        secondRegister = term(); // Catches the type of the second term
 
-        if (signal != false && type2 != TypeEnum.INTEGER) {
+        if (firstRegister.getType() != secondRegister.getType() || firstRegister.getType() != TypeEnum.INTEGER) {
           // Throws an error and exit the program
           System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
           System.exit(1);
-        }
-
-        if (type1 != type2) {
-          // Throws an error and exit the program
-          System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
-          System.exit(1);
-        } else {
-          signal = false;
-          finalType = type1;
         }
 
       } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.MINUS) {
-        signal = true;
-
         matchToken(TokenEnum.MINUS);
-        valueAux = valueInt; // Temporary vartiable to store the first value
-        type2 = term(); // Catches the type of the second term
+        secondRegister = term(); // Catches the type of the second term
 
-        // The final value will be the difference of the temporary and the second value
-        if (valueAux != null && valueInt != null) {
-          valueInt = valueAux - valueInt;
-        }
-
-        if (signal != false && type2 != TypeEnum.INTEGER) {
+        if (firstRegister.getType() != secondRegister.getType() || firstRegister.getType() != TypeEnum.INTEGER) {
           // Throws an error and exit the program
           System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
           System.exit(1);
         }
 
-        if (type1 != type2) {
-          // Throws an error and exit the program
-          System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
-          System.exit(1);
-        } else {
-          signal = false;
-          finalType = type1;
-        }
       } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.OR) {
         matchToken(TokenEnum.OR);
-        type2 = term(); // Catches the type of the second term
+        secondRegister = term(); // Catches the type of the second term
 
-        if (type1 != type2) {
+        if (firstRegister.getType() != secondRegister.getType() || firstRegister.getType() != TypeEnum.LOGIC) {
           // Throws an error and exit the program
           System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
           System.exit(1);
-        } else {
-          signal = false;
-          finalType = TypeEnum.LOGIC;
         }
       }
     }
 
-    if (type2 == null) {
-      finalType = type1;
-    }
-
-    return finalType;
+    return finalRegister;
   }
 
   /**
    * TERM -> FACTOR { (* | / | % | and) FACTOR }
    * 
    * @throws IOException
-   * @return TypeEnum of TERM
+   * @return finalRegister Register
    * 
    */
-  public TypeEnum term() throws IOException {
-    boolean signal = false;
-    TypeEnum type1 = null;
-    TypeEnum type2 = null;
-    TypeEnum finalType = null;
-    Integer valueAux = null;
+  public Register term() throws IOException {
+    Register firstRegister;
+    Register secondRegister;
+    Register finalRegister = new Register();
 
-    type1 = factor(); // Catches the type of the first factor
+    firstRegister = factor(); // Catches the type of the first factor
+
+    finalRegister.setAddress(firstRegister.getAddress());
+    finalRegister.setSize(firstRegister.getSize());
+    finalRegister.setType(firstRegister.getType());
 
     while (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.MULTIPLY
         || SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.PERCENTAGE
         || SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.DIVIDE
         || SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.AND) {
       if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.MULTIPLY) {
-        signal = true;
         matchToken(TokenEnum.MULTIPLY);
 
-        valueAux = valueInt; // Temporary vartiable to store the first value
-        type2 = factor(); // Catches the type of the second factor
+        secondRegister = factor(); // Catches the type of the second factor
 
-        /**
-         * The final value will be the multiplication of the temporary and the second
-         * value
-         * 
-         */
-        if (valueAux != null && valueInt != null) {
-          valueInt = valueAux * valueInt;
-        }
-
-        if (signal != false && type2 != TypeEnum.INTEGER) {
+        if (firstRegister.getType() != secondRegister.getType() || firstRegister.getType() != TypeEnum.INTEGER) {
           // Throws an error and exit the program
           System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
           System.exit(1);
-        }
-
-        if (type1 != type2) {
-          // Throws an error and exit the program
-          System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
-          System.exit(1);
-        } else {
-          signal = false;
-          finalType = type1;
         }
 
       } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.DIVIDE) {
-        signal = true;
         matchToken(TokenEnum.DIVIDE);
 
-        valueAux = valueInt; // Temporary vartiable to store the first value
-        type2 = factor(); // Catches the type of the second factor
+        secondRegister = factor(); // Catches the type of the second factor
 
-        if (valueAux != null && valueInt != null) {
-          valueInt = (int) (valueAux / valueInt);
-        }
-
-        /**
-         * The final value will be the division of the temporary and the second value
-         * 
-         */
-        if (signal != false && type2 != TypeEnum.INTEGER) {
+        if (firstRegister.getType() != secondRegister.getType() || firstRegister.getType() != TypeEnum.INTEGER) {
           // Throws an error and exit the program
           System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
           System.exit(1);
-        }
-
-        if (type1 != type2) {
-          // Throws an error and exit the program
-          System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
-          System.exit(1);
-        } else {
-          signal = false;
-          finalType = type1;
         }
 
       } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.PERCENTAGE) {
-        signal = true;
         matchToken(TokenEnum.PERCENTAGE);
 
-        valueAux = valueInt; // Temporary vartiable to store the first value
-        type2 = factor(); // Catches the type of the second factor
+        secondRegister = factor(); // Catches the type of the second factor
 
-        // The final value will be the module of the temporary and the second value
-        if (valueAux != null && valueInt != null) {
-          valueInt = valueAux % valueInt;
-        }
-
-        if (signal != false && type2 != TypeEnum.INTEGER) {
-          // Throws an error and exit the program
-          System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
-          System.exit(1);
-        }
-
-        if (type1 != type2) {
+        if (firstRegister.getType() != secondRegister.getType() || firstRegister.getType() != TypeEnum.INTEGER) {
           System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
           System.exit(1);
         } else {
-          signal = false;
-          finalType = type1;
+          finalRegister = firstRegister;
         }
 
       } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.AND) {
         matchToken(TokenEnum.AND);
-        type2 = factor(); // Catches the type of the second factor
+        secondRegister = factor(); // Catches the type of the second factor
 
-        if (type1 != type2) {
+        if (firstRegister.getType() != secondRegister.getType() || firstRegister.getType() != TypeEnum.LOGIC) {
           // Throws an error and exit the program
           System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
           System.exit(1);
-        } else {
-          signal = false;
-          finalType = TypeEnum.LOGIC;
         }
       }
     }
 
-    if (type2 == null) {
-      finalType = type1;
-    }
-
-    return finalType;
+    return finalRegister;
   }
 
   /**
@@ -1401,15 +1277,14 @@ public class Parser {
    * @return TypeEnum of FACTOR
    * 
    */
-  public TypeEnum factor() throws IOException {
-    TypeEnum type = null;
-    TypeEnum idType = null;
+  public Register factor() throws IOException {
+    Register register = new Register();
 
     if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.NOT) {
       matchToken(TokenEnum.NOT);
-      type = factor(); // Catches the type of the factor
+      register = factor(); // Catches the type of the factor
 
-      if (type != TypeEnum.LOGIC) {
+      if (register.getType() != TypeEnum.LOGIC) {
         // Throws an error and exit the program
         System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
         System.exit(1);
@@ -1417,16 +1292,17 @@ public class Parser {
 
     } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.OPEN_PARENTHESES) {
       matchToken(TokenEnum.OPEN_PARENTHESES);
-      type = exp(); // Catches the type of the expression
+
+      register = exp(); // Catches the type of the expression
       matchToken(TokenEnum.CLOSE_PARENTHESES);
     } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ID) {
-      idType = SymbolTable.getType(lAnalyzer.lexeme);
+      register.setType(SymbolTable.getType(lAnalyzer.lexeme));
       matchToken(TokenEnum.ID);
       if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.OPEN_BRACKETS) {
         matchToken(TokenEnum.OPEN_BRACKETS);
-        type = exp(); // Catches the type of the expression
+        register = exp(); // Catches the type of the expression
 
-        if (type != TypeEnum.INTEGER) {
+        if (register.getType() != TypeEnum.INTEGER) {
           // Throws an error and exit the program
           System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
           System.exit(1);
@@ -1437,25 +1313,34 @@ public class Parser {
     } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.VALUE) {
       if (Character.isDigit(lAnalyzer.lexeme.charAt(0))
           && lAnalyzer.lexeme.charAt(lAnalyzer.lexeme.length() - 1) != 'h') {
-        valueInt = Integer.parseInt(lAnalyzer.lexeme);
-        type = v(); // Catches the type of the value
+        int temp = temporary(2);
+        buffer.add("  mov ax, " + lAnalyzer.lexeme);
+        buffer.add("  mov DS:[" + temp + "], ax");
+        register.setAddress(temp);
       } else {
-        valueChar = lAnalyzer.lexeme;
-        type = v(); // Catches the type of the value
+        int temp = temporary(1);
+        buffer.add("  mov ah, " + lAnalyzer.lexeme);
+        buffer.add("  mov DS:[" + temp + "], ah");
+        register.setAddress(temp);
       }
+
+      register.setType(SymbolTable.getType(lAnalyzer.lexeme)); // Type is integer or character
+      matchToken(TokenEnum.VALUE);
     } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.TRUE
         || SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.FALSE) {
-      type = v();
+      int temp = temporary(2);
+      buffer.add("  mov ax, " + (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.TRUE ? 1 : 0));
+      buffer.add("  mov DS:[" + temp + "], ax");
+      register.setAddress(temp);
+
+      register.setType(SymbolTable.getType(lAnalyzer.lexeme)); // Type is logic
+      matchToken(SymbolTable.getToken(lAnalyzer.lexeme));
     } else {
       // Throws an error and exit the program
       System.out.println(lAnalyzer.currentLine + "\n" + "token nao esperado" + " [" + lAnalyzer.lexeme + "]" + ".");
       System.exit(1);
     }
 
-    if (idType != null) {
-      type = idType;
-    }
-
-    return type;
+    return register;
   }
 }

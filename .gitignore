@@ -3,3 +3,5 @@
 .classpath
 tests
 program.asm
+program.EXE
+jwasm
