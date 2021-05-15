@@ -5,9 +5,9 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 
 public class Parser {
-  int nextTemp = 0;
-  int nextVar = 0x4000;
-  int nextLabel = 0;
+  int nextTemp = 0; // Counter of temporary
+  int nextMemo = 0x4000;// The first address to variable declaration
+  int nextLabel = 0; // Counter to create new labels
   LexicalAnalyzer lAnalyzer; // Instance of the lexical analyzer
   BufferedWriter assemblyFile; // Instance of the assembly program file
   public List<String> buffer; // Buffer responsible store the assembly instructions
@@ -37,8 +37,8 @@ public class Parser {
   }
 
   public int memory(int numByte) {
-    nextVar += numByte;
-    return nextVar - numByte;
+    nextMemo += numByte;
+    return nextMemo - numByte;
   }
 
   public String label() {
@@ -1056,9 +1056,7 @@ public class Parser {
       secondRegister = exps(); // Catches the type of the expression
 
       if (firstRegister.getType() == secondRegister.getType()) {
-
-        // if(expData1.size > 0)
-
+        finalRegister.setType(TypeEnum.LOGIC);
       } else {
         // Throws an error and exit the program
         System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
@@ -1068,8 +1066,16 @@ public class Parser {
       matchToken(TokenEnum.NOT_EQUAL);
       secondRegister = exps(); // Catches the type of the expression
 
-      if (firstRegister == secondRegister) {
-        // returnData = TypeEnum.LOGIC;
+      if (firstRegister.getType() == secondRegister.getType()) {
+
+        if (firstRegister.getType() != TypeEnum.CHARACTER) {
+          finalRegister.setType(TypeEnum.LOGIC);
+        } else {
+          // Throws an error and exit the program
+          System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
+          System.exit(1);
+        }
+
       } else {
         // Throws an error and exit the program
         System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
@@ -1079,8 +1085,16 @@ public class Parser {
       matchToken(TokenEnum.LESS_THAN);
       secondRegister = exps(); // Catches the type of the expression
 
-      if (firstRegister == secondRegister) {
-        // returnData = TypeEnum.LOGIC;
+      if (firstRegister.getType() == secondRegister.getType()) {
+
+        if (firstRegister.getType() != TypeEnum.CHARACTER) {
+          finalRegister.setType(TypeEnum.LOGIC);
+        } else {
+          // Throws an error and exit the program
+          System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
+          System.exit(1);
+        }
+
       } else {
         // Throws an error and exit the program
         System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
@@ -1090,8 +1104,16 @@ public class Parser {
       matchToken(TokenEnum.GREATER_THAN);
       secondRegister = exps(); // Catches the type of the expression
 
-      if (firstRegister == secondRegister) {
-        // returnData = TypeEnum.LOGIC;
+      if (firstRegister.getType() == secondRegister.getType()) {
+
+        if (firstRegister.getType() != TypeEnum.CHARACTER) {
+          finalRegister.setType(TypeEnum.LOGIC);
+        } else {
+          // Throws an error and exit the program
+          System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
+          System.exit(1);
+        }
+
       } else {
         // Throws an error and exit the program
         System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
@@ -1101,8 +1123,16 @@ public class Parser {
       matchToken(TokenEnum.LESS_OR_EQUAL);
       secondRegister = exps(); // Catches the type of the expression
 
-      if (firstRegister == secondRegister) {
-        // returnData = TypeEnum.LOGIC;
+      if (firstRegister.getType() == secondRegister.getType()) {
+
+        if (firstRegister.getType() != TypeEnum.CHARACTER) {
+          finalRegister.setType(TypeEnum.LOGIC);
+        } else {
+          // Throws an error and exit the program
+          System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
+          System.exit(1);
+        }
+
       } else {
         // Throws an error and exit the program
         System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
@@ -1112,8 +1142,16 @@ public class Parser {
       matchToken(TokenEnum.GREATER_OR_EQUAL);
       secondRegister = exps(); // Catches the type of the expression
 
-      if (firstRegister == secondRegister) {
-        // returnData = TypeEnum.LOGIC;
+      if (firstRegister.getType() == secondRegister.getType()) {
+
+        if (firstRegister.getType() != TypeEnum.CHARACTER) {
+          finalRegister.setType(TypeEnum.LOGIC);
+        } else {
+          // Throws an error and exit the program
+          System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
+          System.exit(1);
+        }
+
       } else {
         // Throws an error and exit the program
         System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
@@ -1188,7 +1226,8 @@ public class Parser {
         matchToken(TokenEnum.OR);
         secondRegister = term(); // Catches the type of the second term
 
-        if (firstRegister.getType() != secondRegister.getType() || firstRegister.getType() != TypeEnum.LOGIC) {
+        if (firstRegister.getType() != secondRegister.getType() || firstRegister.getType() != TypeEnum.LOGIC
+            || secondRegister.getType() != TypeEnum.LOGIC) {
           // Throws an error and exit the program
           System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
           System.exit(1);
@@ -1259,7 +1298,8 @@ public class Parser {
         matchToken(TokenEnum.AND);
         secondRegister = factor(); // Catches the type of the second factor
 
-        if (firstRegister.getType() != secondRegister.getType() || firstRegister.getType() != TypeEnum.LOGIC) {
+        if (firstRegister.getType() != secondRegister.getType() || firstRegister.getType() != TypeEnum.LOGIC
+            || secondRegister.getType() != TypeEnum.LOGIC) {
           // Throws an error and exit the program
           System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
           System.exit(1);
@@ -1298,8 +1338,10 @@ public class Parser {
     } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ID) {
       register.setType(SymbolTable.getType(lAnalyzer.lexeme));
       matchToken(TokenEnum.ID);
+
       if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.OPEN_BRACKETS) {
         matchToken(TokenEnum.OPEN_BRACKETS);
+
         register = exp(); // Catches the type of the expression
 
         if (register.getType() != TypeEnum.INTEGER) {
