@@ -165,8 +165,8 @@ public class SymbolTable {
    * @return size
    * 
    */
-  public static int getSize(String lexeme) {
-    int size = 0;
+  public static Integer getSize(String lexeme) {
+    Integer size = null;
 
     for (Symbol symbol : symbolTable) {
       if (symbol.getLexeme().equals(lexeme)) {
@@ -233,7 +233,7 @@ public class SymbolTable {
    * @param size   the size of a Symbol
    * 
    */
-  public static void setSize(String lexeme, int size) {
+  public static void setSize(String lexeme, Integer size) {
     for (Symbol symbol : symbolTable) {
       if (symbol.getLexeme().equals(lexeme)) {
         symbol.setSize(size);

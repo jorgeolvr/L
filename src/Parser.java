@@ -252,7 +252,13 @@ public class Parser {
         }
 
         String lexemeValue = lAnalyzer.lexeme;
-        valueType = v(); // Catches the type of the value that will be attribuited to the identifier
+
+        if (lexemeValue.charAt(0) == '\"' && lexemeValue.charAt(lexemeValue.length() - 1) == '\"') {
+          System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
+          System.exit(1);
+        } else {
+          valueType = v(); // Catches the type of the value that will be attribuited in the identifier
+        }
 
         if (valueType == TypeEnum.CHARACTER) {
           line = "  byte ";
@@ -361,7 +367,11 @@ public class Parser {
       line += size + " DUP(?)";
 
       matchToken(TokenEnum.CLOSE_BRACKETS);
-    } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ATTRIBUTION) {
+    } else {
+      SymbolTable.setSize(idLexeme, null);
+    }
+
+    if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ATTRIBUTION) {
       matchToken(TokenEnum.ATTRIBUTION);
 
       if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.PLUS) {
@@ -372,7 +382,13 @@ public class Parser {
       }
 
       String lexemeValue = lAnalyzer.lexeme;
-      valueType = v(); // Catches the type of the value that will be attribuited in the identifier
+
+      if (SymbolTable.getType(idLexeme) == TypeEnum.CHARACTER && size <= 0 && lexemeValue.charAt(0) == '\"') {
+        System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
+        System.exit(1);
+      } else {
+        valueType = v(); // Catches the type of the value that will be attribuited in the identifier
+      }
 
       // The type must be integer if have plus or minus signal
       if (signal == true && valueType != TypeEnum.INTEGER) {
@@ -448,7 +464,11 @@ public class Parser {
         line += size + " DUP(?)";
 
         matchToken(TokenEnum.CLOSE_BRACKETS);
-      } else if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ATTRIBUTION) {
+      } else {
+        SymbolTable.setSize(idLexeme, null);
+      }
+
+      if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ATTRIBUTION) {
         matchToken(TokenEnum.ATTRIBUTION);
 
         if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.PLUS) {
@@ -459,7 +479,13 @@ public class Parser {
         }
 
         String lexemeValue = lAnalyzer.lexeme;
-        valueType = v(); // Catches the type of the value that will be attribuited in the identifier
+
+        if (SymbolTable.getType(idLexeme) == TypeEnum.CHARACTER && size <= 0 && lexemeValue.charAt(0) == '\"') {
+          System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
+          System.exit(1);
+        } else {
+          valueType = v(); // Catches the type of the value that will be attribuited in the identifier
+        }
 
         if (signal == true && valueType != TypeEnum.INTEGER) {
           // Throws an error and exit the program
@@ -507,7 +533,7 @@ public class Parser {
         matchToken(TokenEnum.ID);
       } else if (SymbolTable.getKind(lAnalyzer.lexeme) == KindEnum.CONST) {
         // Throws an error and exit the program
-        System.out.println(lAnalyzer.currentLine + "\n" + "classe de identificador incompatível" + " ["
+        System.out.println(lAnalyzer.currentLine + "\n" + "classe de identificador incompativel" + " ["
             + lAnalyzer.lexeme + "]" + ".");
         System.exit(1);
       } else {
@@ -523,18 +549,25 @@ public class Parser {
     }
 
     // [ “[“ EXP “]” ]
-    if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.OPEN_BRACKETS) {
-      matchToken(TokenEnum.OPEN_BRACKETS);
+    if (SymbolTable.getSize(idLexeme) != null) {
+      if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.OPEN_BRACKETS) {
+        matchToken(TokenEnum.OPEN_BRACKETS);
 
-      register = exp(); // Catches the type of the expression
+        register = exp(); // Catches the type of the expression
 
-      if (register.getType() != TypeEnum.INTEGER) {
-        // Throws an error and exit the program
+        if (register.getType() != TypeEnum.INTEGER) {
+          // Throws an error and exit the program
+          System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
+          System.exit(1);
+        }
+
+        matchToken(TokenEnum.CLOSE_BRACKETS);
+        // } else if (SymbolTable.getType(idLexeme) == TypeEnum.INTEGER &&
+        // SymbolTable.getSize(idLexeme) == null) {
+      } else {
         System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
         System.exit(1);
       }
-
-      matchToken(TokenEnum.CLOSE_BRACKETS);
     }
 
     // [:= [ ( + | - ) ] EXP ]
@@ -549,6 +582,7 @@ public class Parser {
         matchToken(TokenEnum.MINUS);
       }
 
+      String valueLexeme = lAnalyzer.lexeme;
       register = exp(); // Catches the type of the expression
 
       if (signal == true && register.getType() != TypeEnum.INTEGER) {
@@ -559,6 +593,19 @@ public class Parser {
         signal = false;
         verifyAttributionCompatibility(idLexeme, register.getType());
 
+        if (SymbolTable.getType(idLexeme) == TypeEnum.CHARACTER
+            && lAnalyzer.lexeme.charAt(lAnalyzer.lexeme.length() - 1) == '\"'
+            && SymbolTable.getSize(idLexeme) < lAnalyzer.lexeme.length() - 1) {
+          System.out.println(lAnalyzer.currentLine + "\n" + "tamanho do vetor excede o maximo permitido.");
+          System.exit(1);
+        } else if (lAnalyzer.lexeme.charAt(lAnalyzer.lexeme.length() - 1) == '\"'
+            && SymbolTable.getSize(idLexeme) < SymbolTable.getSize(valueLexeme)) {
+          System.out.println(lAnalyzer.currentLine + "\n" + "tamanho do vetor excede o maximo permitido.");
+          System.exit(1);
+        } else if (SymbolTable.getSize(idLexeme) == null && SymbolTable.getSize(valueLexeme) != null) {
+          System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
+          System.exit(1);
+        }
       }
     }
   }
@@ -866,7 +913,7 @@ public class Parser {
    */
   public void a() throws IOException {
     boolean signal = false;
-    Register register;
+    Register register = null;
     String idLexeme = null;
 
     if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ID) {
@@ -875,7 +922,7 @@ public class Parser {
         matchToken(TokenEnum.ID);
       } else if (SymbolTable.getKind(lAnalyzer.lexeme) == KindEnum.CONST) {
         // Throws an error and exit the program
-        System.out.println(lAnalyzer.currentLine + "\n" + "classe de identificador incompatível" + " ["
+        System.out.println(lAnalyzer.currentLine + "\n" + "classe de identificador incompativel" + " ["
             + lAnalyzer.lexeme + "]" + ".");
         System.exit(1);
       } else {
@@ -891,18 +938,25 @@ public class Parser {
     }
 
     // [ “[“ EXP “]” ]
-    if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.OPEN_BRACKETS) {
-      matchToken(TokenEnum.OPEN_BRACKETS);
+    if (SymbolTable.getSize(idLexeme) != null) {
+      if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.OPEN_BRACKETS) {
+        matchToken(TokenEnum.OPEN_BRACKETS);
 
-      register = exp(); // Catches the type of the expression
+        register = exp(); // Catches the type of the expression
 
-      if (register.getType() != TypeEnum.INTEGER) {
-        // Throws an error and exit the program
+        if (register.getType() != TypeEnum.INTEGER) {
+          // Throws an error and exit the program
+          System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
+          System.exit(1);
+        }
+
+        matchToken(TokenEnum.CLOSE_BRACKETS);
+        // } else if (SymbolTable.getType(idLexeme) == TypeEnum.INTEGER &&
+        // SymbolTable.getSize(idLexeme) == null) {
+      } else {
         System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
         System.exit(1);
       }
-
-      matchToken(TokenEnum.CLOSE_BRACKETS);
     }
 
     // [:= [ ( + | - ) ] EXP ]
@@ -917,6 +971,7 @@ public class Parser {
         matchToken(TokenEnum.MINUS);
       }
 
+      String valueLexeme = lAnalyzer.lexeme;
       register = exp(); // Catches the type of the expression
 
       if (signal == true && register.getType() != TypeEnum.INTEGER) {
@@ -926,44 +981,67 @@ public class Parser {
       } else {
         signal = false;
         verifyAttributionCompatibility(idLexeme, register.getType());
-      }
-    }
 
-    // {, id [ “[“ EXP “]” ] [ := [ ( + | - ) ] EXP ] }
-    while (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.COMMA) {
-      matchToken(TokenEnum.COMMA);
-
-      if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ID) {
-        if (SymbolTable.getKind(lAnalyzer.lexeme) == KindEnum.VAR) {
-          // idLexeme = lAnalyzer.lexeme;
-          matchToken(TokenEnum.ID);
-        } else if (SymbolTable.getKind(lAnalyzer.lexeme) == KindEnum.CONST) {
-          // Throws an error and exit the program
-          System.out.println(lAnalyzer.currentLine + "\n" + "classe de identificador incompatível" + " ["
-              + lAnalyzer.lexeme + "]" + ".");
+        if (SymbolTable.getType(idLexeme) == TypeEnum.CHARACTER
+            && lAnalyzer.lexeme.charAt(lAnalyzer.lexeme.length() - 1) == '\"'
+            && SymbolTable.getSize(idLexeme) < lAnalyzer.lexeme.length() - 1) {
+          System.out.println(lAnalyzer.currentLine + "\n" + "tamanho do vetor excede o maximo permitido.");
           System.exit(1);
-        } else {
-          // Throws an error and exit the program
-          System.out.println(
-              lAnalyzer.currentLine + "\n" + "identificador nao declarado" + " [" + lAnalyzer.lexeme + "]" + ".");
+        } else if (lAnalyzer.lexeme.charAt(lAnalyzer.lexeme.length() - 1) == '\"'
+            && SymbolTable.getSize(idLexeme) < SymbolTable.getSize(valueLexeme)) {
+          System.out.println(lAnalyzer.currentLine + "\n" + "tamanho do vetor excede o maximo permitido.");
           System.exit(1);
-        }
-      } else {
-        // Throws an error and exit the program
-        System.out.println(lAnalyzer.currentLine + "\n" + "token nao esperado" + " [" + lAnalyzer.lexeme + "]" + ".");
-        System.exit(1);
-      }
-
-      // [ “[“ EXP “]” ]
-      if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.OPEN_BRACKETS) {
-        matchToken(TokenEnum.OPEN_BRACKETS);
-
-        register = exp(); // Catches the type of the expression
-
-        if (register.getType() != TypeEnum.INTEGER) {
-          // Throws an error and exit the program
+        } else if (SymbolTable.getSize(idLexeme) == null && SymbolTable.getSize(valueLexeme) != null) {
           System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
           System.exit(1);
+        }
+      }
+
+      // {, id [ “[“ EXP “]” ] [ := [ ( + | - ) ] EXP ] }
+      while (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.COMMA) {
+        matchToken(TokenEnum.COMMA);
+
+        if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.ID) {
+          if (SymbolTable.getKind(lAnalyzer.lexeme) == KindEnum.VAR) {
+            // idLexeme = lAnalyzer.lexeme;
+            matchToken(TokenEnum.ID);
+          } else if (SymbolTable.getKind(lAnalyzer.lexeme) == KindEnum.CONST) {
+            // Throws an error and exit the program
+            System.out.println(lAnalyzer.currentLine + "\n" + "classe de identificador incompativel" + " ["
+                + lAnalyzer.lexeme + "]" + ".");
+            System.exit(1);
+          } else {
+            // Throws an error and exit the program
+            System.out.println(
+                lAnalyzer.currentLine + "\n" + "identificador nao declarado" + " [" + lAnalyzer.lexeme + "]" + ".");
+            System.exit(1);
+          }
+        } else {
+          // Throws an error and exit the program
+          System.out.println(lAnalyzer.currentLine + "\n" + "token nao esperado" + " [" + lAnalyzer.lexeme + "]" + ".");
+          System.exit(1);
+        }
+
+        // [ “[“ EXP “]” ]
+        if (SymbolTable.getSize(idLexeme) != null) {
+          if (SymbolTable.getToken(lAnalyzer.lexeme) == TokenEnum.OPEN_BRACKETS) {
+            matchToken(TokenEnum.OPEN_BRACKETS);
+
+            register = exp(); // Catches the type of the expression
+
+            if (register.getType() != TypeEnum.INTEGER) {
+              // Throws an error and exit the program
+              System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
+              System.exit(1);
+            }
+
+            matchToken(TokenEnum.CLOSE_BRACKETS);
+            // } else if (SymbolTable.getType(idLexeme) == TypeEnum.INTEGER &&
+            // SymbolTable.getSize(idLexeme) == null) {
+          } else {
+            System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
+            System.exit(1);
+          }
         }
 
         matchToken(TokenEnum.CLOSE_BRACKETS);
@@ -981,6 +1059,7 @@ public class Parser {
           matchToken(TokenEnum.MINUS);
         }
 
+        String newValueLexeme = lAnalyzer.lexeme;
         register = exp(); // Catches the type of the expression
 
         if (signal == true && register.getType() != TypeEnum.INTEGER) {
@@ -990,6 +1069,20 @@ public class Parser {
         } else {
           signal = false;
           verifyAttributionCompatibility(idLexeme, register.getType());
+
+          if (SymbolTable.getType(idLexeme) == TypeEnum.CHARACTER
+              && lAnalyzer.lexeme.charAt(lAnalyzer.lexeme.length() - 1) == '\"'
+              && SymbolTable.getSize(idLexeme) < lAnalyzer.lexeme.length() - 1) {
+            System.out.println(lAnalyzer.currentLine + "\n" + "tamanho do vetor excede o maximo permitido.");
+            System.exit(1);
+          } else if (lAnalyzer.lexeme.charAt(lAnalyzer.lexeme.length() - 1) == '\"'
+              && SymbolTable.getSize(idLexeme) < SymbolTable.getSize(newValueLexeme)) {
+            System.out.println(lAnalyzer.currentLine + "\n" + "tamanho do vetor excede o maximo permitido.");
+            System.exit(1);
+          } else if (SymbolTable.getSize(idLexeme) == null && SymbolTable.getSize(newValueLexeme) != null) {
+            System.out.println(lAnalyzer.currentLine + "\n" + "tipos incompativeis.");
+            System.exit(1);
+          }
         }
       }
     }

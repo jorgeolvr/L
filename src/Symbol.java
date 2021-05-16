@@ -3,7 +3,7 @@ public class Symbol {
   public TokenEnum token; // The token of the Symbol
   public TypeEnum type; // The type of the Symbol
   public KindEnum kind; // The kind of the Symbol
-  public int size; // The size of the Symbol
+  public Integer size; // The size of the Symbol
   public int address;
 
   /**
@@ -18,6 +18,7 @@ public class Symbol {
     this.token = token;
     this.type = null;
     this.kind = null;
+    this.size = null;
   }
 
   /**
@@ -33,6 +34,7 @@ public class Symbol {
     this.token = token;
     this.type = type;
     this.kind = null;
+    this.size = null;
   }
 
   /**
@@ -48,6 +50,7 @@ public class Symbol {
     this.token = token;
     this.type = null;
     this.kind = kind;
+    this.size = null;
   }
 
   /**
@@ -65,6 +68,7 @@ public class Symbol {
     this.token = token;
     this.type = type;
     this.kind = kind;
+    this.size = null;
   }
 
   /**
@@ -78,7 +82,7 @@ public class Symbol {
    * @param size   the kind of a Symbol
    * 
    */
-  Symbol(String lexeme, TokenEnum token, TypeEnum type, KindEnum kind, int size) {
+  Symbol(String lexeme, TokenEnum token, TypeEnum type, KindEnum kind, Integer size) {
     this.lexeme = lexeme;
     this.token = token;
     this.type = type;
@@ -132,7 +136,7 @@ public class Symbol {
    * @return size
    * 
    */
-  public int getSize() {
+  public Integer getSize() {
     return size;
   }
 
@@ -172,7 +176,7 @@ public class Symbol {
    * @param size the size of a Symbol
    * 
    */
-  public void setSize(int size) {
+  public void setSize(Integer size) {
     this.size = size;
   }
 

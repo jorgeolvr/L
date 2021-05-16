@@ -1,7 +1,7 @@
 public class Register {
   int address; // The address of the Register
   TypeEnum type; // The type of the Register
-  int size; // The size of the Register
+  Integer size = null; // The size of the Register
 
   Register() {
     // Constructor just to create a new instance
@@ -15,7 +15,7 @@ public class Register {
    * @param size    the size of a Register
    * 
    */
-  Register(int address, TypeEnum type, int size) {
+  Register(int address, TypeEnum type, Integer size) {
     this.address = address;
     this.type = type;
     this.size = size;
@@ -37,7 +37,7 @@ public class Register {
    * @return size
    * 
    */
-  public int getSize() {
+  public Integer getSize() {
     return size;
   }
 
@@ -67,7 +67,7 @@ public class Register {
    * @param size the size of a Register
    * 
    */
-  public void setSize(int size) {
+  public void setSize(Integer size) {
     this.size = size;
   }
 

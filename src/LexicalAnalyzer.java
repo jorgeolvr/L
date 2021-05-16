@@ -2,7 +2,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
 import java.io.BufferedReader;
 import java.awt.event.KeyEvent;
 
@@ -20,7 +19,7 @@ public class LexicalAnalyzer {
 
   // List of allowed symbols in the language
   List<Character> symbol = new ArrayList<Character>(Arrays.asList('<', '>', '=', '!', '+', '-', '/', '*', '(', ')', '[',
-      ']', '{', '}', '\'', '\"', ';', ':', '_', ',', '?', '@', '%', '.'));
+      ']', '{', '}', '\'', '\"', ';', ':', '_', ',', '?', '@', '%', '.', '$'));
 
   // List of blank spaces in the language
   List<Character> blank = new ArrayList<Character>(Arrays.asList(' ', '\n', '\r', '\t'));
