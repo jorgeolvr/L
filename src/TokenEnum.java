@@ -1,3 +1,12 @@
+
+/**   
+ *  Componentes do grupo
+ *  Carolina de Lima Silva - 561397
+ *  Jorge Allan de Castro Oliveira - 559855
+ *  Ricardo Xavier Sena - 481694
+ * 
+ */
+
 public enum TokenEnum {
   // An enumeration of all tokens in the language
   ID, VALUE, CONST, FINAL, INT, CHAR, BOOLEAN, IF, FOR, TRUE, FALSE, ELSE, AND, OR, NOT, THEN, READLN, WRITE, WRITELN,

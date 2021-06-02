@@ -1,3 +1,12 @@
+
+/**   
+ *  Componentes do grupo
+ *  Carolina de Lima Silva - 561397
+ *  Jorge Allan de Castro Oliveira - 559855
+ *  Ricardo Xavier Sena - 481694
+ * 
+ */
+
 public class Register {
   int address; // The address of the Register
   TypeEnum type; // The type of the Register
@@ -80,5 +89,4 @@ public class Register {
   public void setType(TypeEnum type) {
     this.type = type;
   }
-
 }

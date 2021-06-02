@@ -1,3 +1,12 @@
+
+/**   
+ *  Componentes do grupo
+ *  Carolina de Lima Silva - 561397
+ *  Jorge Allan de Castro Oliveira - 559855
+ *  Ricardo Xavier Sena - 481694
+ * 
+ */
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;

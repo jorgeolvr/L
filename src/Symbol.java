@@ -1,10 +1,19 @@
+
+/**   
+ *  Componentes do grupo
+ *  Carolina de Lima Silva - 561397
+ *  Jorge Allan de Castro Oliveira - 559855
+ *  Ricardo Xavier Sena - 481694
+ * 
+ */
+
 public class Symbol {
   public String lexeme; // The lexeme of the Symbol
   public TokenEnum token; // The token of the Symbol
   public TypeEnum type; // The type of the Symbol
   public KindEnum kind; // The kind of the Symbol
   public Integer size; // The size of the Symbol
-  public int address;
+  public int address; // The address of thr Symbol
 
   /**
    * Constructor responsible initialize the lexeme and token of a Symbol

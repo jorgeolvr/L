@@ -1,8 +1,8 @@
 
 /**   
  *  Componentes do grupo
- *  Carol Lima - 561397
- *  Jorge Oliveira - 559855
+ *  Carolina de Lima Silva - 561397
+ *  Jorge Allan de Castro Oliveira - 559855
  *  Ricardo Xavier Sena - 481694
  * 
  */
@@ -10,6 +10,7 @@
 import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.FileReader;
+//import java.nio.charset.StandardCharsets;
 
 public class L {
     public static void main(String[] args) throws IOException {
@@ -34,3 +35,16 @@ public class L {
         }
     }
 }
+
+/*
+ * // Gets the file BufferedReader file = new BufferedReader(new
+ * InputStreamReader(System.in, StandardCharsets.UTF_8));
+ * 
+ * // Instance of the lexical analyzer LexicalAnalyzer lAnalyzer = new
+ * LexicalAnalyzer(file);
+ * 
+ * // Instance of the syntax analyzer Parser sAnalyzer = new Parser(lAnalyzer);
+ * 
+ * // Calls the method responsible to realize the syntax analysis
+ * sAnalyzer.parse();
+ */
